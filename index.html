@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AniBrain - AI Manga Explorer</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0" />
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sentiment/4.2.0/sentiment.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="instrument-sans-regular">
+
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container-fluid d-flex justify-content-between mx-3">
+            <a class="navbar-brand p-2 d-flex align-items-center gap-2" href="#" onclick="init()">
+                <span class="material-symbols-outlined" style="font-size: 30px; color: #DA4D80;">auto_stories</span>
+                <span class="logo-text">AniBrain</span>
+            </a>
+            
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex my-2 my-lg-0 d-none d-md-block">
+                    <input id="searchInput" class="form-control search-input" type="search" placeholder="Search title..." aria-label="Search">
+                </div>
+
+                <button class="smart-search-btn" onclick="openSmartSearch()" title="Smart Search">
+                    <span class="material-symbols-outlined">psychology</span>
+                </button>
+
+                <button class="theme-btn" onclick="toggleTheme()" title="Toggle Dark Mode">
+                    <span class="material-symbols-outlined" id="themeIcon">dark_mode</span>
+                </button>
+                
+                <div class="dropdown custom-dropdown">
+                    <a class="nav-link" href="#" role="button" data-bs-toggle="dropdown">
+                        <span class="material-symbols-outlined menu-icon p-2">menu</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" id="genreDropdown">
+                        <li><h6 class="dropdown-header">Browse Categories</h6></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center gap-2" href="#" onclick="loadFavoritesPage()">
+                                <span class="material-symbols-outlined" style="font-size:20px; color:#DA4D80;">favorite</span>
+                                My Favorites
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid main-container pt-4">
+        <div class="px-4" id="hero-wrapper" style="display: none;">
+            <div id="hero-section" class="hero-banner">
+                <div class="hero-overlay"></div>
+                <div class="hero-content">
+                    <span class="hero-chip">#1 Trending Now</span>
+                    <h1 class="display-4 fw-bold mb-2 text-white" id="hero-title">Loading...</h1>
+                    <p class="lead text-white" id="hero-synopsis">Loading...</p>
+                    <button class="btn btn-light rounded-pill px-4 fw-bold mt-3 shadow-lg" style="color: #DA4D80;" id="hero-btn">Read More</button>
+                </div>
+            </div>
+        </div>
+        <div id="content-area" class="d-flex flex-column gap-5 pb-5"></div>
+    </div>
+
+    <div class="modal fade" id="infoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+                <div class="modal-header border-0" style="background-color: #FFF0F5;">
+                    <h5 class="modal-title fw-bold" style="color: #DA4D80;">Manga Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="row g-0">
+                        <div class="col-md-5 bg-light d-flex justify-content-center align-items-center p-4">
+                            <img id="modalImg" src="" class="img-fluid rounded shadow" style="max-height: 400px; object-fit: cover;">
+                        </div>
+                        <div class="col-md-7 p-4">
+                            <h2 id="modalTitle" class="fw-bold mb-1">Title</h2>
+                            <h6 id="modalOriginalTitle" class="text-muted mb-3 fst-italic small">Original Title</h6>
+                            <div class="d-flex gap-2 mb-3 align-items-center flex-wrap">
+                                <span id="modalScore" class="badge bg-warning text-dark shadow-sm">Score: N/A</span>
+                                <span id="modalStatus" class="badge bg-success shadow-sm">Publishing</span>
+                                <span id="modalType" class="badge bg-secondary shadow-sm">Manga</span>
+                            </div>
+                            <div id="aiVibeContainer" class="mb-3 p-2 rounded" style="background: rgba(218, 77, 128, 0.1); display: inline-block;">
+                                <span id="vibeBadge" class="fw-bold" style="color: #DA4D80;">🤖 AI Vibe: Analyzing...</span>
+                            </div>
+                            <h6 class="text-muted text-uppercase small fw-bold mb-2">Synopsis:</h6>
+                            <div class="p-3 rounded bg-light border overflow-auto custom-scrollbar" style="max-height: 180px;">
+                                <p id="modalSynopsis" class="mb-0" style="font-size: 0.95rem; line-height: 1.6;">Loading...</p>
+                            </div>
+                            <button id="modalFavBtn" class="btn btn-outline-danger w-100 mt-4 rounded-pill py-2 fw-bold shadow-sm transition-btn">
+                                <span class="material-symbols-outlined" style="vertical-align: middle;">favorite_border</span> 
+                                Add to Favorites
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="aiModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="background: var(--modal-bg); color: var(--text-color); border-radius: 20px;">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold" style="color: #DA4D80;">✨ AI Recommendations</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div id="aiLoading" class="text-center py-4">
+                        <div class="spinner-border text-danger mb-3" role="status"></div>
+                        <p class="text-muted fw-medium">Consulting the Anime Gods...<br><small class="text-secondary">Powered by Gemini 2.5</small></p>
+                    </div>
+                    <div id="aiResult" style="white-space: pre-line; font-size: 1rem; line-height: 1.6; display: none;"></div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-dark rounded-pill px-4" data-bs-dismiss="modal">Awesome</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="smartSearchModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg" style="background: var(--modal-bg); color: var(--text-color); border-radius: 20px;">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold d-flex align-items-center gap-2" style="color: #DA4D80;">
+                        <span class="material-symbols-outlined">psychology</span> Smart Search
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    
+                    <h6 class="fw-bold mb-2">🤖 Option 1: AI Semantic Search</h6>
+                    <p class="text-muted small">Type anything like "Best horror from 2015" or "Manga about vikings"</p>
+                    <div class="input-group mb-3">
+                        <input type="text" id="smartSearchInput" class="form-control rounded-start-pill ps-4" placeholder="Describe what you want...">
+                        <button class="btn btn-danger rounded-end-pill px-4" onclick="runSmartSearch()" style="background-color: #DA4D80; border: none;">
+                            ✨ Ask AI to Search
+                        </button>
+                    </div>
+                    <div id="smartSearchLoading" class="text-center my-3" style="display: none;">
+                        <div class="spinner-border text-danger spinner-border-sm" role="status"></div>
+                        <small class="ms-2 text-muted">AI is analyzing your request...</small>
+                    </div>
+
+                    <hr class="my-4">
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold m-0">🏷️ Option 2: Filter by Genre</h6>
+                        <button type="button" class="btn btn-sm btn-dark rounded-pill px-3" onclick="executeFilterSearch()">Search Selected Tags</button>
+                    </div>
+                    <p class="text-muted small mb-3">Click tags to select multiple genres.</p>
+                    
+                    <div class="genre-chips-container" id="genreChips">
+                        </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
